@@ -154,18 +154,26 @@ async function extractWindSpeed(page, address, debugMode, keyValueStore) {
         // Step 4: Click SEARCH button
         console.log('🔍 Clicking SEARCH button...');
 
-        // Find the SEARCH button (div with text "SEARCH")
-        const searchButton = await page.$(SELECTORS.searchButton) ||
-            await page.evaluateHandle(() => {
-                const divs = document.querySelectorAll('div');
-                for (const div of divs) {
-                    if (div.textContent.trim() === 'SEARCH') return div;
+        // Use page.evaluate to click by text content (more reliable)
+        const searchClicked = await page.evaluate(() => {
+            // Look for SEARCH button/div
+            const elements = document.querySelectorAll('div, button, span');
+            for (const el of elements) {
+                if (el.textContent.trim() === 'SEARCH') {
+                    el.click();
+                    return true;
                 }
-                return null;
-            });
+            }
+            // Fallback: look for search button class
+            const searchBtn = document.querySelector('.search-button, [class*="search-btn"]');
+            if (searchBtn) {
+                searchBtn.click();
+                return true;
+            }
+            return false;
+        });
 
-        if (searchButton && searchButton.click) {
-            await searchButton.click();
+        if (searchClicked) {
             console.log('✅ SEARCH clicked');
         } else {
             // Fallback: press Enter
@@ -173,36 +181,37 @@ async function extractWindSpeed(page, address, debugMode, keyValueStore) {
             console.log('✅ Used Enter key as fallback');
         }
 
-        await delay(CONFIG.delays.long);
+        // Wait for search results
+        await delay(CONFIG.delays.long * 2);
         await saveScreenshot(page, 'step_04_search_clicked', debugMode, keyValueStore);
 
         // Step 5: Select Risk Category II
         console.log('🎯 Selecting Risk Category II...');
 
-        // Use verified selector: #risk-level-selector
-        // Note: Standard JS value assignment may not trigger UI update
-        // Use click + keyboard navigation as verified in browser test
-        const riskDropdown = await page.$(SELECTORS.riskCategoryDropdown);
-        if (riskDropdown) {
-            await riskDropdown.click();
-            await delay(CONFIG.delays.short);
-            // Navigate to option "II" (ArrowDown twice: I -> II)
-            await page.keyboard.press('ArrowDown'); // Select I
-            await delay(100);
-            await page.keyboard.press('ArrowDown'); // Select II
-            await delay(100);
-            await page.keyboard.press('Enter');
+        // Use page.evaluate for reliable dropdown interaction
+        const riskSelected = await page.evaluate(() => {
+            // Find the dropdown by ID
+            const select = document.getElementById('risk-level-selector');
+            if (select) {
+                // Set value and trigger change event
+                select.value = 'II';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+            }
+            // Fallback: look for dropdown by class
+            const selectAlt = document.querySelector('[class*="risk"], select');
+            if (selectAlt && selectAlt.tagName === 'SELECT') {
+                selectAlt.value = 'II';
+                selectAlt.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+            }
+            return false;
+        });
+
+        if (riskSelected) {
             console.log('✅ Selected Risk Category II');
         } else {
-            console.warn('⚠️ Risk category dropdown not found, trying fallback');
-            // Fallback: try to set value directly
-            await page.evaluate(() => {
-                const select = document.getElementById('risk-level-selector');
-                if (select) {
-                    select.value = 'II';
-                    select.dispatchEvent(new Event('change'));
-                }
-            });
+            console.warn('⚠️ Risk category dropdown not found');
         }
 
         await delay(CONFIG.delays.medium);
