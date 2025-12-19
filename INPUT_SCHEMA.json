@@ -1,0 +1,24 @@
+{
+    "title": "ASCE Wind Speed Input",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "address": {
+            "title": "Address",
+            "type": "string",
+            "description": "Full property address (street, city, state, zip)",
+            "editor": "textfield",
+            "example": "411 Crusaders Drive, Sanford, NC 27330"
+        },
+        "debugScreenshots": {
+            "title": "Debug Screenshots",
+            "type": "boolean",
+            "description": "Capture screenshots at each step for debugging",
+            "default": false,
+            "editor": "checkbox"
+        }
+    },
+    "required": [
+        "address"
+    ]
+}

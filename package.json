@@ -1,0 +1,16 @@
+{
+    "name": "asce-wind-actor",
+    "version": "1.0.0",
+    "description": "Apify actor to extract wind speed data from ASCE Hazard Tool",
+    "main": "main.js",
+    "scripts": {
+        "start": "node main.js",
+        "test": "node main.js --test"
+    },
+    "dependencies": {
+        "apify": "^3.1.0",
+        "puppeteer": "^21.0.0"
+    },
+    "author": "Knockout Inspections",
+    "license": "ISC"
+}

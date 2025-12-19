@@ -1,0 +1,53 @@
+{
+    "actorSpecification": 1,
+    "name": "asce-wind-actor",
+    "title": "ASCE Wind Speed Extractor",
+    "description": "Extracts wind speed hazard data from ASCE Hazard Tool for a given address",
+    "version": "1.0.0",
+    "input": "./INPUT_SCHEMA.json",
+    "storages": {
+        "dataset": {
+            "actorSpecification": 1,
+            "title": "Wind Speed Results",
+            "views": {
+                "results": {
+                    "title": "Wind Speed Results",
+                    "transformation": {
+                        "fields": [
+                            "address",
+                            "windSpeed",
+                            "unit",
+                            "riskCategory",
+                            "timestamp"
+                        ]
+                    },
+                    "display": {
+                        "component": "table",
+                        "properties": {
+                            "address": {
+                                "label": "Address",
+                                "format": "text"
+                            },
+                            "windSpeed": {
+                                "label": "Wind Speed",
+                                "format": "text"
+                            },
+                            "unit": {
+                                "label": "Unit",
+                                "format": "text"
+                            },
+                            "riskCategory": {
+                                "label": "Risk Category",
+                                "format": "text"
+                            },
+                            "timestamp": {
+                                "label": "Timestamp",
+                                "format": "text"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
