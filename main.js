@@ -7,7 +7,7 @@
  * @see https://ascehazardtool.org/
  */
 
-const Apify = require('apify');
+const { Actor } = require('apify');
 const puppeteer = require('puppeteer');
 
 // Configuration
@@ -317,12 +317,13 @@ async function extractWindSpeed(page, address, debugMode, keyValueStore) {
 }
 
 // Main Apify actor entry point
-Apify.main(async () => {
+Actor.main(async () => {
     console.log('🚀 Starting ASCE Wind Speed Extractor...');
+    console.log('📋 Debug mode enabled for troubleshooting');
 
     // Get input
-    const input = await Apify.getInput();
-    const { address, debugScreenshots = false } = input;
+    const input = await Actor.getInput();
+    const { address, debugScreenshots = true } = input || {};
 
     if (!address) {
         throw new Error('Address is required');
@@ -332,20 +333,25 @@ Apify.main(async () => {
     console.log(`📸 Debug screenshots: ${debugScreenshots ? 'enabled' : 'disabled'}`);
 
     // Initialize storage
-    const keyValueStore = await Apify.openKeyValueStore();
-    const dataset = await Apify.openDataset();
+    const keyValueStore = await Actor.openKeyValueStore();
+    const dataset = await Actor.openDataset();
 
-    // Launch browser
-    const browser = await Apify.launchPuppeteer({
+    // Launch browser using puppeteer directly (SDK v3 pattern)
+    console.log('🌐 Launching browser...');
+    const browser = await puppeteer.launch({
         headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage'
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-features=IsolateOrigins,site-per-process'
         ]
     });
 
     const page = await browser.newPage();
+    console.log('✅ Browser launched');
 
     // Set viewport
     await page.setViewport({ width: 1280, height: 800 });
@@ -371,32 +377,7 @@ Apify.main(async () => {
 
     } finally {
         await browser.close();
+        console.log('🔒 Browser closed');
     }
 });
 
-// For local testing without Apify
-if (require.main === module && !process.env.APIFY_TOKEN) {
-    const args = process.argv.slice(2);
-    const addressArg = args.find(a => a.startsWith('--address='));
-
-    if (addressArg) {
-        const address = addressArg.split('=')[1];
-        console.log(`🧪 Local test mode with address: ${address}`);
-
-        // Mock Apify for local testing
-        const mockApify = {
-            main: async (fn) => fn(),
-            getInput: async () => ({ address, debugScreenshots: true }),
-            openKeyValueStore: async () => ({
-                setValue: async (key, value) => console.log(`[KV] ${key}: saved`)
-            }),
-            openDataset: async () => ({
-                pushData: async (data) => console.log('[Dataset]:', JSON.stringify(data, null, 2))
-            }),
-            launchPuppeteer: async (opts) => puppeteer.launch({ ...opts, headless: 'new' })
-        };
-
-        // Override Apify with mock
-        Object.assign(Apify, mockApify);
-    }
-}
