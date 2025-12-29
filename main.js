@@ -392,27 +392,53 @@ Actor.main(async () => {
     const keyValueStore = await Actor.openKeyValueStore();
     const dataset = await Actor.openDataset();
 
-    // Launch browser using puppeteer directly (SDK v3 pattern)
+    // Launch browser using puppeteer directly (SDK v3 pattern) with optimization
     console.log('🌐 Launching browser...');
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: true, // Typically faster in headless
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
-            '--disable-features=IsolateOrigins,site-per-process'
+            '--disable-features=IsolateOrigins,site-per-process',
+            // Perforamnce flags
+            '--disable-extensions',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-default-apps',
+            '--mute-audio',
+            '--no-default-browser-check',
+            '--autoplay-policy=user-gesture-required',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-notifications',
+            '--disable-background-networking',
+            '--disable-breakpad',
+            '--disable-component-update',
+            '--disable-domain-reliability',
+            '--disable-sync'
         ]
     });
 
     const page = await browser.newPage();
     console.log('✅ Browser launched');
 
+    // Optimize: Block unnecessary resources
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+        const resourceType = req.resourceType();
+        if (['image', 'media', 'font', 'stylesheet', 'other'].includes(resourceType)) {
+            req.abort();
+        } else {
+            req.continue();
+        }
+    });
+
     // Set viewport
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Set user agent to appear as regular browser
+    // Set user agent to appear as regular browser (required for some sites)
     await page.setUserAgent(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     );
